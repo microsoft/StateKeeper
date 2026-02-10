@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/StateKeeper/StateKeeper.csproj" />
+  </Folder>
+  <Folder Name="/src/tests/">
+    <Project Path="src/tests/StateKeeper.Tests.OrleansCompat/StateKeeper.Tests.OrleansCompat.csproj" />
+    <Project Path="src/tests/StateKeeper.Tests/StateKeeper.Tests.csproj" />
+  </Folder>
+</Solution>
