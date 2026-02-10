@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Orleans is used only for Orleans-compatibility unit tests-->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
+    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="9.1.2" />
+    <PackageVersion Include="MSTest" Version="3.11.1" />
+  </ItemGroup>
+</Project>
