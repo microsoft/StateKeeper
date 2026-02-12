@@ -9,4 +9,7 @@
     <Project Path="src/tests/StateKeeper.Tests.OrleansCompat/StateKeeper.Tests.OrleansCompat.csproj" />
     <Project Path="src/tests/StateKeeper.Tests/StateKeeper.Tests.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/StateKeeper.Samples.csproj" />
+  </Folder>
 </Solution>

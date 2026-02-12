@@ -1,0 +1,36 @@
+using StateKeeper;
+
+namespace StateKeeper.Samples;
+
+/// <summary>
+/// Demonstrates PriorityAsyncLock: exclusive access with priority ordering.
+/// Waiters with a lower priority value acquire access first.
+/// </summary>
+internal static class PriorityAsyncLockSample
+{
+    internal static async Task Sample(CancellationToken cancellationToken)
+    {
+        // initialize with the mutable state to protect
+        // optionally pass a custom comparer to control priority ordering.
+        // "lower" priority values will acquire access before "higher" ones.
+        using PriorityAsyncLock<List<string>, int> priorityLock = new(
+            state: ["foo", "bar"],
+            priorityComparer: Comparer<int>.Create((a, b) => a.CompareTo(b)));
+
+        // acquire exclusive access with a given priority
+        using (var handle = await priorityLock.AcquireAsync(waiterPriority: 123, cancellationToken))
+        {
+            handle.State.Add("baz");
+            string foo = handle.State[0];
+        }
+
+        // try to acquire without waiting — returns false if the lock is already held
+        if (priorityLock.TryAcquire(out var tryHandle))
+        {
+            using (tryHandle)
+            {
+                tryHandle.State.Add("qux");
+            }
+        }
+    }
+}
