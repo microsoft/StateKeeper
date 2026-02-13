@@ -3,10 +3,13 @@
     <Platform Name="Any CPU" />
   </Configurations>
   <Folder Name="/src/">
-    <Project Path="src/StateKeeper/StateKeeper.csproj" />
+    <Project Path="src/Microsoft.StateKeeper/Microsoft.StateKeeper.csproj" />
   </Folder>
   <Folder Name="/src/tests/">
-    <Project Path="src/tests/StateKeeper.Tests.OrleansCompat/StateKeeper.Tests.OrleansCompat.csproj" />
-    <Project Path="src/tests/StateKeeper.Tests/StateKeeper.Tests.csproj" />
+    <Project Path="src/tests/Microsoft.StateKeeper.Tests.OrleansCompat/Microsoft.StateKeeper.Tests.OrleansCompat.csproj" />
+    <Project Path="src/tests/Microsoft.StateKeeper.Tests/Microsoft.StateKeeper.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Microsoft.StateKeeper.Samples.csproj" />
   </Folder>
 </Solution>
