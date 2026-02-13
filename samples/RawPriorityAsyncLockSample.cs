@@ -1,6 +1,6 @@
-using StateKeeper.Raw;
+using Microsoft.StateKeeper.Raw;
 
-namespace StateKeeper.Samples;
+namespace Microsoft.StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates RawPriorityAsyncLock: a mutual-exclusion lock without managed state

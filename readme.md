@@ -90,7 +90,7 @@ if (priorityLock.TryAcquire(out var tryHandle))
 }
 ```
 
-`StateKeeper.Raw` contains variants that do not hold an associated state and work like normal async locks.
+`Microsoft.StateKeeper.Raw` contains variants that do not hold an associated state.
 
 ```cs
 List<string> list = ["foo", "bar"];

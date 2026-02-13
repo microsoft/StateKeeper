@@ -1,6 +1,6 @@
-using StateKeeper;
+using Microsoft.StateKeeper;
 
-namespace StateKeeper.Samples;
+namespace Microsoft.StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates PriorityAsyncLock: exclusive access with priority ordering.

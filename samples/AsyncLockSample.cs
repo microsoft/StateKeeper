@@ -1,5 +1,5 @@
-using StateKeeper;
-namespace StateKeeper.Samples;
+using Microsoft.StateKeeper;
+namespace Microsoft.StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates AsyncLock: exclusive access to a shared state object.

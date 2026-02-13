@@ -1,7 +1,7 @@
-using StateKeeper;
-using StateKeeper.Raw;
+using Microsoft.StateKeeper;
+using Microsoft.StateKeeper.Raw;
 
-namespace StateKeeper.Samples;
+namespace Microsoft.StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates RawRWAsyncLock: a reader-writer lock without managed state.
