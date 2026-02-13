@@ -8,7 +8,7 @@ namespace StateKeeper;
 /// <summary>
 /// Manages exclusive access to a state object. Waiting callers acquire access in priority order.
 /// </summary>
-/// <remarks><para>Waiters with a <b>lower</b> priority value will acquire access before waiters with a higher value.</para>
+/// <remarks><para>Waiters acquire access in ascending priority order.</para>
 /// <para>Releasing the acquired handle allows other callers to acquire access.</para></remarks>
 /// <typeparam name="TState">The type of the state object.</typeparam>
 /// <typeparam name="TWaiterPriority">Type of argument to determine priority of callers.</typeparam>

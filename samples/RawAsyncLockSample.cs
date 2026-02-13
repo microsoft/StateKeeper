@@ -13,13 +13,13 @@ internal static class RawAsyncLockSample
     {
         List<string> list = ["foo", "bar"];
 
-        // initialize with FIFO ordering (default) or LIFO
         using RawAsyncLock rawLock = new(AcquisitionOrder.FIFO);
 
         // acquire the lock — returns a releaser that unlocks when disposed
         using (var releaser = await rawLock.AcquireAsync(cancellationToken))
         {
-            // safely access the shared resource while holding the lock
+            // access the shared resource while holding the lock
+            // but nothing guarantees that other tasks won't also access that state
             list.Add("baz");
         }
 

@@ -4,7 +4,7 @@ namespace StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates PriorityAsyncLock: exclusive access with priority ordering.
-/// Waiters with a lower priority value acquire access first.
+/// Waiters acquire access in ascending priority order.
 /// </summary>
 internal static class PriorityAsyncLockSample
 {
@@ -12,7 +12,7 @@ internal static class PriorityAsyncLockSample
     {
         // initialize with the mutable state to protect
         // optionally pass a custom comparer to control priority ordering.
-        // "lower" priority values will acquire access before "higher" ones.
+        // waiters acquire access in ascending order.
         using PriorityAsyncLock<List<string>, int> priorityLock = new(
             state: ["foo", "bar"],
             priorityComparer: Comparer<int>.Create((a, b) => a.CompareTo(b)));

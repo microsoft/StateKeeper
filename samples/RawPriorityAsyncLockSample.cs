@@ -4,7 +4,7 @@ namespace StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates RawPriorityAsyncLock: a mutual-exclusion lock without managed state
-/// where waiting tasks acquire in priority order (lower value = higher priority).
+/// where waiting tasks acquire in ascending priority order.
 /// You manage the protected resource yourself.
 /// </summary>
 internal static class RawPriorityAsyncLockSample
@@ -17,10 +17,11 @@ internal static class RawPriorityAsyncLockSample
         using RawPriorityAsyncLock<int> rawPriorityLock = new();
 
         // acquire the lock with a given priority
-        // when multiple tasks are waiting, lower priority values go first
+        // when multiple tasks are waiting, they acquire in ascending order
         using (var releaser = await rawPriorityLock.AcquireAsync(waiterPriority: 1, cancellationToken))
         {
-            // safely access the shared resource while holding the lock
+            // access the shared resource while holding the lock
+            // but nothing guarantees that other tasks won't also access that state
             list.Add("baz");
         }
 
