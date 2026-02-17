@@ -10,6 +10,11 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 
 [*.cs]
+
+# File header
+file_header_template = Copyright (c) Microsoft Corporation.\nLicensed under the MIT License.
+dotnet_diagnostic.IDE0073.severity = warning
+
 #### .NET Coding Conventions ####
 
 # Organize usings

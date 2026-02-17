@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using Orleans.TestingHost;
 
 namespace Microsoft.StateKeeper.Tests.OrleansCompat.Helper;
