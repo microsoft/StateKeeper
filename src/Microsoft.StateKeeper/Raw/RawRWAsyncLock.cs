@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CA2000 // Releaser ownership is transferred to callers via return value or TrySetResult

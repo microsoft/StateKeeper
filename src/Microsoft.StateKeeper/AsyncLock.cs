@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #pragma warning disable CA2000 // StateHandle takes ownership of the lock releaser
 
 using System.Diagnostics.CodeAnalysis;

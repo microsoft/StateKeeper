@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using Microsoft.StateKeeper;
 using Microsoft.StateKeeper.Raw;
 
