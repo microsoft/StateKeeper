@@ -11,12 +11,12 @@ namespace Microsoft.StateKeeper.Tests.OrleansCompat.Helper;
 /// </summary>
 public interface IExecutorGrain : IGrainWithStringKey
 {
-    private static readonly ConcurrentDictionary<string, GrainTestCallback> RegisteredCallbacks = new();
+    private static readonly ConcurrentDictionary<string, GrainTestFunction> RegisteredCallbacks = new();
 
-    static void RegisterCallback(string id, GrainTestCallback callback) =>
+    static void RegisterCallback(string id, GrainTestFunction callback) =>
         RegisteredCallbacks[id] = callback;
 
-    static GrainTestCallback GetCallback(string id) =>
+    static GrainTestFunction GetCallback(string id) =>
         RegisteredCallbacks[id];
 
     /// <summary>

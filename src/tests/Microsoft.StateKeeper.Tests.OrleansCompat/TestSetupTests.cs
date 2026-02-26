@@ -15,7 +15,7 @@ public class TestSetupTests
     [TestMethod]
     public async Task CheckOrleans_OnGrainScheduler_Succeeds()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             await checkOrleans();
         });
@@ -26,7 +26,7 @@ public class TestSetupTests
     {
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
         {
-            await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+            await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
             {
                 // Escape to the thread pool, then try to check Orleans
                 await Task.Run(async () => await checkOrleans());

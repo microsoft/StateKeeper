@@ -21,7 +21,7 @@ public class ExecutorGrain : Grain, IExecutorGrain
         {
             this._expectedScheduler ??= TaskScheduler.Current;
             var callback = IExecutorGrain.GetCallback(callbackId);
-            await callback(this.CheckOrleans);
+            await callback(this.CheckOrleans, this.CheckTaskScheduler);
         }
         finally
         {
@@ -36,6 +36,17 @@ public class ExecutorGrain : Grain, IExecutorGrain
         return Task.CompletedTask;
     }
 
+    private void CheckTaskScheduler()
+    {
+        var scheduler = TaskScheduler.Current;
+        if (scheduler != this._expectedScheduler)
+        {
+            throw new InvalidOperationException(
+                $"Expected to be running on the grain's task scheduler ({this._expectedScheduler}), " +
+                $"but running on {scheduler} instead.");
+        }
+    }
+
     /// <summary>
     /// Asserts that we are still running on the grain's original task scheduler,
     /// then exercises a grain-to-grain call by pinging a disposable sibling grain.
@@ -44,13 +55,7 @@ public class ExecutorGrain : Grain, IExecutorGrain
     private async Task CheckOrleans()
     {
         // directly verify we're still in the expected task scheduler
-        var scheduler = TaskScheduler.Current;
-        if (scheduler != this._expectedScheduler)
-        {
-            throw new InvalidOperationException(
-                $"Expected to be running on the grain's task scheduler ({this._expectedScheduler}), " +
-                $"but running on {scheduler} instead.");
-        }
+        this.CheckTaskScheduler();
 
         // verify orleans works (if we were in the wrong scheduler it would throw)
         var pingTargetId = Guid.NewGuid().ToString();

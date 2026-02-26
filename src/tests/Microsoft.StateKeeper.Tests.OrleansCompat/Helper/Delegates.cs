@@ -4,13 +4,19 @@
 namespace Microsoft.StateKeeper.Tests.OrleansCompat.Helper;
 
 /// <summary>
-/// Callback the grain invokes to let test code assert that execution
+/// Function the grain invokes to let test code assert that execution
 /// is still happening on the grain's task scheduler.
 /// </summary>
 public delegate Task CheckOrleans();
 
 /// <summary>
+/// Function the grain invokes to let test code assert that execution is still happening
+/// in the grain's task scheduler.
+/// </summary>
+public delegate void CheckTaskScheduler();
+
+/// <summary>
 /// An async test callback that runs inside a grain and receives a
 /// <see cref="CheckOrleans"/> to verify scheduler affinity.
 /// </summary>
-public delegate Task GrainTestCallback(CheckOrleans checkOrleans);
+public delegate Task GrainTestFunction(CheckOrleans checkOrleans, CheckTaskScheduler checkTaskScheduler);

@@ -23,7 +23,7 @@ public static class ClusterFixture
     /// Registers the callback, dispatches it to a fresh grain, and runs it
     /// on the grain's task scheduler.
     /// </summary>
-    public static async Task ExecuteOnGrain(GrainTestCallback callback)
+    public static async Task ExecuteOnGrain(GrainTestFunction callback)
     {
         var id = Guid.NewGuid().ToString();
         IExecutorGrain.RegisterCallback(id, callback);

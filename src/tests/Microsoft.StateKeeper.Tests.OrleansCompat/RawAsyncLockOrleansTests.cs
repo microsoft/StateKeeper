@@ -12,7 +12,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task UncontestedAcquire()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
@@ -27,7 +27,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task ContestedAcquire()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
@@ -52,7 +52,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task CancelWaiting()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
@@ -81,7 +81,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireSucceeds()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
@@ -98,7 +98,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireFails()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
@@ -118,7 +118,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task DisposeUnblocksWaitersAndPreventsNewAcquires()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             var sut = new RawAsyncLock();
 
@@ -148,7 +148,7 @@ public class RawAsyncLockOrleansTests
     [TestMethod]
     public async Task ReleaserDoubleDisposeIsIdempotent()
     {
-        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             using var sut = new RawAsyncLock();
 
