@@ -17,7 +17,7 @@ public class PriorityAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireAsync_ExposesState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "hello" };
             using var sut = new PriorityAsyncLock<List<string>, int>(state);
@@ -34,7 +34,7 @@ public class PriorityAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquire_ExposesState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "world" };
             using var sut = new PriorityAsyncLock<List<string>, int>(state);
@@ -55,7 +55,7 @@ public class PriorityAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireAsync_Contested_ExposesState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "contested" };
             using var sut = new PriorityAsyncLock<List<string>, int>(state);
@@ -82,7 +82,7 @@ public class PriorityAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquire_WhenLocked_Fails()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "locked" };
             using var sut = new PriorityAsyncLock<List<string>, int>(state);

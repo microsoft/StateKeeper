@@ -17,7 +17,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireWriter_ExposesMutableState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "initial" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -35,7 +35,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireReader_ExposesReadOnlyState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "hello", "world" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -53,7 +53,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireReader_ProjectionThrows_ReleasesLock()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string>();
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(
@@ -74,7 +74,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireReader_ProjectionThrows_ReleasesLock()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string>();
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(
@@ -93,7 +93,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireWriterAsync_Contested_ExposesMutableState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "contested-write" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -120,13 +120,20 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task AcquireReaderAsync_Contested_ExposesReadOnlyState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
+            var initialTaskScheduler = TaskScheduler.Current;
+
+
             var state = new List<string> { "contested-read" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => {
                 // the closure to get the read-only state must be executed in the correct task scheduler,
                 // otherwise we would violate orleans' single-threaded guarantees
-                checkTaskScheduler();
+                if (TaskScheduler.Current != initialTaskScheduler)
+                {
+                    throw new InvalidOperationException(
+                        $"Projection function running on wrong scheduler.");
+                }
                 return s.AsReadOnly();
             });
 
@@ -152,7 +159,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireWriter_ExposesState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "try-write" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -173,7 +180,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireWriter_WhenLocked_Fails()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string>();
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -191,7 +198,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireReader_ExposesState()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string> { "try-read" };
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
@@ -213,7 +220,7 @@ public class RWAsyncLockOrleansTests
     [TestMethod]
     public async Task TryAcquireReader_WhenWriterActive_Fails()
     {
-        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
         {
             var state = new List<string>();
             using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
