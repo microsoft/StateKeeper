@@ -64,8 +64,7 @@ public sealed class RWAsyncLock<TMutableState, TReadOnlyState> : IDisposable whe
     /// </summary>
     private async ValueTask<StateHandle<TMutableState>> AwaitAcquireWriter(ValueTask<IDisposable> task)
     {
-        var releaser = await task.ConfigureAwait(false);
-        return new StateHandle<TMutableState>(this.mutableState, releaser);
+        return new StateHandle<TMutableState>(this.mutableState, await task);
     }
 
     /// <summary>
