@@ -89,4 +89,137 @@ public class RWAsyncLockOrleansTests
             await checkOrleans();
         });
     }
+
+    [TestMethod]
+    public async Task AcquireWriterAsync_Contested_ExposesMutableState()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string> { "contested-write" };
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            // Hold a reader so the writer must wait (contested / slow path)
+            using var reader = await sut.AcquireReaderAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var writerTask = sut.AcquireWriterAsync(CancellationToken.None).AsTask();
+            Assert.IsFalse(writerTask.IsCompleted, "writer should be waiting while reader is active");
+
+            reader.Dispose();
+            await checkOrleans();
+
+            using var writer = await writerTask;
+            await checkOrleans();
+
+            Assert.AreSame(state, writer.State);
+            Assert.AreEqual("contested-write", writer.State[0]);
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task AcquireReaderAsync_Contested_ExposesReadOnlyState()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string> { "contested-read" };
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            // Hold a writer so the reader must wait (contested / slow path)
+            using var writer = await sut.AcquireWriterAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var readerTask = sut.AcquireReaderAsync(CancellationToken.None).AsTask();
+            Assert.IsFalse(readerTask.IsCompleted, "reader should be waiting while writer is active");
+
+            writer.Dispose();
+            await checkOrleans();
+
+            using var reader = await readerTask;
+            await checkOrleans();
+
+            Assert.AreEqual(1, reader.State.Count);
+            Assert.AreEqual("contested-read", reader.State[0]);
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task TryAcquireWriter_ExposesState()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string> { "try-write" };
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            var succeeded = sut.TryAcquireWriter(out var handle);
+            await checkOrleans();
+
+            Assert.IsTrue(succeeded);
+            Assert.IsNotNull(handle);
+            Assert.AreSame(state, handle.State);
+            await checkOrleans();
+
+            handle.Dispose();
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task TryAcquireWriter_WhenLocked_Fails()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string>();
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            using var writer = await sut.AcquireWriterAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var succeeded = sut.TryAcquireWriter(out var handle2);
+            Assert.IsFalse(succeeded);
+            Assert.IsNull(handle2);
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task TryAcquireReader_ExposesState()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string> { "try-read" };
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            var succeeded = sut.TryAcquireReader(out var handle);
+            await checkOrleans();
+
+            Assert.IsTrue(succeeded);
+            Assert.IsNotNull(handle);
+            Assert.AreEqual(1, handle.State.Count);
+            Assert.AreEqual("try-read", handle.State[0]);
+            await checkOrleans();
+
+            handle.Dispose();
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task TryAcquireReader_WhenWriterActive_Fails()
+    {
+        await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
+        {
+            var state = new List<string>();
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+
+            using var writer = await sut.AcquireWriterAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var succeeded = sut.TryAcquireReader(out var handle2);
+            Assert.IsFalse(succeeded);
+            Assert.IsNull(handle2);
+            await checkOrleans();
+        });
+    }
 }
