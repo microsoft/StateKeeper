@@ -93,8 +93,11 @@ public sealed class RWAsyncLock<TMutableState, TReadOnlyState> : IDisposable whe
     /// </summary>
     private async ValueTask<StateHandle<TReadOnlyState>> AwaitAcquireReader(ValueTask<IDisposable> task)
     {
-        var releaser = await task.ConfigureAwait(false);
-        return this.CreateReaderHandle(releaser);
+        // it is important that we are not calling ConfigureAwait(false) here.
+        // for some use cases, it is important that the closure to get the read-only state
+        // is always executed in the same synchronization context as the caller
+        // (e.g. Orleans grains' single-threaded task scheduler).
+        return this.CreateReaderHandle(await task);
     }
 
     /// <summary>

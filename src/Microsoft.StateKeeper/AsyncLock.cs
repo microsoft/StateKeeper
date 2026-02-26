@@ -54,8 +54,7 @@ public sealed class AsyncLock<TState> : IDisposable where TState : class
     /// </summary>
     private async ValueTask<StateHandle<TState>> AwaitAcquire(ValueTask<IDisposable> task)
     {
-        var releaser = await task.ConfigureAwait(false);
-        return new StateHandle<TState>(this.state, releaser);
+        return new StateHandle<TState>(this.state, await task);
     }
 
     /// <summary>
