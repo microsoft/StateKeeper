@@ -123,7 +123,12 @@ public class RWAsyncLockOrleansTests
         await ClusterFixture.ExecuteOnGrain(async (checkOrleans, checkTaskScheduler) =>
         {
             var state = new List<string> { "contested-read" };
-            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => s.AsReadOnly());
+            using var sut = new RWAsyncLock<List<string>, IReadOnlyList<string>>(state, s => {
+                // the closure to get the read-only state must be executed in the correct task scheduler,
+                // otherwise we would violate orleans' single-threaded guarantees
+                checkTaskScheduler();
+                return s.AsReadOnly();
+            });
 
             // Hold a writer so the reader must wait (contested / slow path)
             using var writer = await sut.AcquireWriterAsync(CancellationToken.None);
