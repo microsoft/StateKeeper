@@ -51,4 +51,49 @@ public class AsyncLockOrleansTests
             await checkOrleans();
         });
     }
+
+    [TestMethod]
+    public async Task AcquireAsync_Contested_ExposesState()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            var state = new List<string> { "contested" };
+            using var sut = new AsyncLock<List<string>>(state);
+
+            // Hold the lock so the next acquire must wait (contested / slow path)
+            using var handle1 = await sut.AcquireAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var handle2Task = sut.AcquireAsync(CancellationToken.None).AsTask();
+            Assert.IsFalse(handle2Task.IsCompleted, "second acquire should be waiting");
+
+            handle1.Dispose();
+            await checkOrleans();
+
+            using var handle2 = await handle2Task;
+            await checkOrleans();
+
+            Assert.AreSame(state, handle2.State);
+            Assert.AreEqual("contested", handle2.State[0]);
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    public async Task TryAcquire_WhenLocked_Fails()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            var state = new List<string> { "locked" };
+            using var sut = new AsyncLock<List<string>>(state);
+
+            using var handle = await sut.AcquireAsync(CancellationToken.None);
+            await checkOrleans();
+
+            var succeeded = sut.TryAcquire(out var handle2);
+            Assert.IsFalse(succeeded);
+            Assert.IsNull(handle2);
+            await checkOrleans();
+        });
+    }
 }

@@ -154,10 +154,12 @@ csharp_preserve_single_line_blocks = true
 # CA1805: Explicit default initialization is intentional for clarity
 dotnet_diagnostic.CA1805.severity = none
 
+# CA2007: (Do not directly await a Task)
+# Compatibility with Orleans is a major goal for this library, and ConfigureAwait(false)
+# is problematic in Orleans apps since it breaks out of a grain's single-threaded task scheduler.
+dotnet_diagnostic.CA2007.severity = none
+
 [src/tests/**/*.cs]
 # Test conventions: public classes required by MSTest, underscore naming is standard
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1707.severity = none
-
-# CA2007: Tests are application code with no SynchronizationContext
-dotnet_diagnostic.CA2007.severity = none
