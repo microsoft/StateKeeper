@@ -305,4 +305,36 @@ public class RawPriorityAsyncLockTests
     {
         Assert.ThrowsExactly<ArgumentNullException>(() => new RawPriorityAsyncLock<int>(null!));
     }
+
+    /// <summary>
+    /// Helper that awaits an acquisition and immediately disposes the resulting releaser
+    /// with no awaits in between. When the awaited task completes via TrySetResult on the
+    /// holder's release path, this helper's continuation runs synchronously inside that
+    /// TrySetResult call. This is the scenario the following tests are designed to exercise.
+    /// </summary>
+    private static async Task AcquireAndDisposeImmediatelyAsync(ValueTask<IDisposable> acquireTask, bool continueOnCapturedContext)
+    {
+        var releaser = await acquireTask.ConfigureAwait(continueOnCapturedContext);
+        releaser.Dispose();
+    }
+
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    [Timeout(5000)]
+    public async Task ReleaseToImmediateDisposeWaiterLeavesLockUsable(bool continueOnCapturedContext)
+    {
+        using RawPriorityAsyncLock<int> sut = new RawPriorityAsyncLock<int>();
+        var r1 = await sut.AcquireAsync(1, this.TestContext.CancellationToken);
+
+        // Queue a waiter whose continuation disposes the releaser synchronously inside TrySetResult.
+        var consumer = AcquireAndDisposeImmediatelyAsync(sut.AcquireAsync(2, this.TestContext.CancellationToken), continueOnCapturedContext);
+
+        r1.Dispose();
+        await consumer;
+
+        Assert.IsTrue(sut.TryAcquire(out IDisposable? r2),
+            "lock should be free after release transferred to an immediately-disposed waiter");
+        r2!.Dispose();
+    }
 }
