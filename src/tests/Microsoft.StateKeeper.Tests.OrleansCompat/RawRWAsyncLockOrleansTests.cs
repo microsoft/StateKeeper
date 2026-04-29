@@ -490,4 +490,131 @@ public class RawRWAsyncLockOrleansTests
             await checkOrleans();
         });
     }
+
+    /// <summary>
+    /// Helper that awaits an acquisition and immediately disposes the resulting releaser
+    /// with no awaits in between. When the awaited task completes via TrySetResult on the
+    /// holder's release path, this helper's continuation runs synchronously inside that
+    /// TrySetResult call. This is the scenario the following tests are designed to exercise.
+    /// </summary>
+    private static async Task AcquireAndDisposeImmediatelyAsync(ValueTask<IDisposable> acquireTask)
+    {
+        var releaser = await acquireTask;
+        releaser.Dispose();
+    }
+
+    [TestMethod]
+    [Timeout(5000)]
+    public async Task WriterReleaseToImmediateDisposeWriterLeavesLockUsable()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            using var sut = new RawRWAsyncLock();
+
+            var w1 = await sut.AcquireWriteLockAsync(CancellationToken.None);
+            await checkOrleans();
+
+            // Queue a waiter whose continuation disposes the releaser synchronously inside TrySetResult.
+            var consumer = AcquireAndDisposeImmediatelyAsync(sut.AcquireWriteLockAsync(CancellationToken.None));
+
+            w1.Dispose();
+            await consumer;
+            await checkOrleans();
+
+            Assert.IsTrue(sut.TryAcquireWriteLock(out var w3),
+                "lock should be free after writer-release transferred to an immediately-disposed writer");
+            w3!.Dispose();
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    [Timeout(5000)]
+    public async Task ReaderReleaseToImmediateDisposeWriterLeavesLockUsable()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            using var sut = new RawRWAsyncLock();
+
+            var r1 = await sut.AcquireReadLockAsync(CancellationToken.None);
+            await checkOrleans();
+
+            // Queue a writer whose continuation disposes the releaser synchronously inside TrySetResult.
+            var consumer = AcquireAndDisposeImmediatelyAsync(sut.AcquireWriteLockAsync(CancellationToken.None));
+
+            r1.Dispose();
+            await consumer;
+            await checkOrleans();
+
+            Assert.IsTrue(sut.TryAcquireWriteLock(out var w2),
+                "lock should be free after reader-release transferred to an immediately-disposed writer");
+            w2!.Dispose();
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    [Timeout(5000)]
+    public async Task WriterReleaseToImmediateDisposeReadersLeavesLockUsable()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            using var sut = new RawRWAsyncLock();
+
+            var w1 = await sut.AcquireWriteLockAsync(CancellationToken.None);
+            await checkOrleans();
+
+            // Queue multiple readers whose continuations all dispose synchronously inside TrySetResult.
+            var c1 = AcquireAndDisposeImmediatelyAsync(sut.AcquireReadLockAsync(CancellationToken.None));
+            var c2 = AcquireAndDisposeImmediatelyAsync(sut.AcquireReadLockAsync(CancellationToken.None));
+
+            w1.Dispose();
+            await c1;
+            await c2;
+            await checkOrleans();
+
+            Assert.IsTrue(sut.TryAcquireWriteLock(out var w2),
+                "lock should be free after writer-release transferred to immediately-disposed readers");
+            w2!.Dispose();
+            await checkOrleans();
+        });
+    }
+
+    [TestMethod]
+    [Timeout(5000)]
+    public async Task CancelingWaitingWriterTransfersToImmediateDisposeReadersLeavesLockUsable()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            using var sut = new RawRWAsyncLock();
+
+            var r1 = await sut.AcquireReadLockAsync(CancellationToken.None);
+            await checkOrleans();
+
+            // Enqueue a writer whose cancellation will trigger the readers-unblock callback path.
+            using var writerCts = new CancellationTokenSource();
+            var canceledWriterTask = sut.AcquireWriteLockAsync(writerCts.Token);
+            Assert.IsFalse(canceledWriterTask.IsCanceled);
+
+            // Queue readers behind the waiting writer; their continuations dispose synchronously
+            // inside TrySetResult when the writer's cancellation callback unblocks them.
+            var c1 = AcquireAndDisposeImmediatelyAsync(sut.AcquireReadLockAsync(CancellationToken.None));
+            var c2 = AcquireAndDisposeImmediatelyAsync(sut.AcquireReadLockAsync(CancellationToken.None));
+
+            await writerCts.CancelAsync();
+            Assert.IsTrue(canceledWriterTask.IsCanceled);
+
+            await c1;
+            await c2;
+            await checkOrleans();
+
+            r1.Dispose();
+            await checkOrleans();
+
+            Assert.IsTrue(sut.TryAcquireWriteLock(out var w2),
+                "lock should be free after canceling a waiting writer that unblocked immediately-disposed readers");
+            w2!.Dispose();
+            await checkOrleans();
+        });
+    }
 }
