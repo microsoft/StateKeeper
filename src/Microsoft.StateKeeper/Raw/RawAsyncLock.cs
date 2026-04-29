@@ -51,7 +51,9 @@ public sealed class RawAsyncLock : IDisposable
 
             if (this.isLocked)
             {
-                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>();
+                // RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
+                // inside TrySetResult while we hold the internal lock, which would risk reentrancy bugs and deadlocks.
+                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                 cancellationToken.Register(() => taskCompletionSource.TrySetCanceled());
                 if (this.acquisitionOrder == AcquisitionOrder.FIFO)
                 {
