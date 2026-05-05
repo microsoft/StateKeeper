@@ -182,4 +182,41 @@ public class RawAsyncLockOrleansTests
             await checkOrleans();
         });
     }
+
+    /// <summary>
+    /// Helper that awaits an acquisition and immediately disposes the resulting releaser
+    /// with no awaits in between. When the awaited task completes via TrySetResult on the
+    /// holder's release path, this helper's continuation runs synchronously inside that
+    /// TrySetResult call. This is the scenario the following test is designed to exercise.
+    /// </summary>
+    private static async Task AcquireAndDisposeImmediatelyAsync(ValueTask<IDisposable> acquireTask)
+    {
+        var releaser = await acquireTask;
+        releaser.Dispose();
+    }
+
+    [TestMethod]
+    [Timeout(5000)]
+    public async Task ReleaseToImmediateDisposeWaiterLeavesLockUsable()
+    {
+        await ClusterFixture.ExecuteOnGrain(async checkOrleans =>
+        {
+            using var sut = new RawAsyncLock();
+
+            var r1 = await sut.AcquireAsync(CancellationToken.None);
+            await checkOrleans();
+
+            // Queue a waiter whose continuation disposes the releaser synchronously inside TrySetResult.
+            var consumer = AcquireAndDisposeImmediatelyAsync(sut.AcquireAsync(CancellationToken.None));
+
+            r1.Dispose();
+            await consumer;
+            await checkOrleans();
+
+            Assert.IsTrue(sut.TryAcquire(out var r2),
+                "lock should be free after release transferred to an immediately-disposed waiter");
+            r2!.Dispose();
+            await checkOrleans();
+        });
+    }
 }

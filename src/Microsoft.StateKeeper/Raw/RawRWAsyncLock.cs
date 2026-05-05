@@ -62,7 +62,9 @@ public sealed class RawRWAsyncLock : IDisposable
             }
             else
             {
-                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>();
+                /// RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
+                // inside TrySetResult while we hold the internal lock, which would risk reentrancy bugs and deadlocks.
+                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                 cancellationToken.Register(() =>
                 {
                     lock (this.syncObject)
@@ -151,7 +153,9 @@ public sealed class RawRWAsyncLock : IDisposable
             }
             else
             {
-                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>();
+                // RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
+                // inside TrySetResult while we hold the internal lock, which would risk reentrancy bugs and deadlocks.
+                TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                 cancellationToken.Register(() => taskCompletionSource.TrySetCanceled());
                 this.ReadWaiters.AddLast(taskCompletionSource);
                 return new ValueTask<IDisposable>(taskCompletionSource.Task);

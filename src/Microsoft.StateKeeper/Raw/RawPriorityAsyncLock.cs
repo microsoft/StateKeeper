@@ -55,7 +55,9 @@ public sealed class RawPriorityAsyncLock<TWaiterPriority> : IDisposable
 
             if (this.isLocked)
             {
-                TaskCompletionSource<IDisposable> taskCompletionSource = new();
+                // RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
+                // inside TrySetResult while we hold the internal lock, which would risk reentrancy bugs and deadlocks.
+                TaskCompletionSource<IDisposable> taskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 cancellationToken.Register(() => taskCompletionSource.TrySetCanceled());
                 this.waiters.Enqueue(taskCompletionSource, waiterPriority);
                 return new ValueTask<IDisposable>(taskCompletionSource.Task);
