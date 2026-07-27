@@ -1,0 +1,15 @@
+schemaVersion: 1.0.0
+# this file configures the code review owners for the internal ADO repository mirror
+# which we use for Microsoft-signed official builds
+# code reviewers for the public GitHub remote are configured elsewhere.
+providers:
+  - provider: Ownership/CodeReviewers
+    version: 1.0.0
+    metadata:
+      options:
+        allowInheritance: true
+      reviewers:
+        - scope: '[AnyFile]'
+          optional:
+            - gracerarer
+            - aztmcore
