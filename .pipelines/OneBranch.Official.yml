@@ -1,0 +1,143 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+# To get Microsoft-internal compliant code signing, the official build pipeline runs in an Azure DevOps repo that mirrors the public GitHub.
+
+# Manual-trigger only.
+trigger: none
+pr: none
+
+parameters:
+  - name: debug
+    displayName: Enable verbose pipeline diagnostics
+    type: boolean
+    default: false
+
+variables:
+  # major.minor lives in a dedicated file so version bumps never touch pipeline
+  # logic. Defines: majorMinor.
+  - template: version.yml
+
+  # Required by OneBranch templates.
+  - name: CDP_DEFINITION_BUILD_COUNT
+    value: $[counter('', 0)]
+  - name: system.debug
+    value: ${{ parameters.debug }}
+
+  # Package version. The patch auto-increments via an Azure DevOps counter keyed
+  # on major.minor (from version.yml), so bumping major.minor resets the patch to
+  # 0. Passed to MSBuild as -p:Version below. Requires no git history, so the
+  # pipeline can use OneBranch's default checkout (see the build job).
+  - name: patch
+    value: $[counter(variables['majorMinor'], 0)]
+  - name: packageVersion
+    value: $(majorMinor).$(patch)
+
+  # dotnet/NuGet ergonomics
+  - name: DOTNET_NOLOGO
+    value: 'true'
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: 'true'
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    value: 'true'
+  - name: NUGET_XMLDOC_MODE
+    value: none
+
+  # OneBranch-sanctioned Linux build container.
+  - name: LinuxContainerImage
+    value: 'mcr.microsoft.com/onebranch/azurelinux/build:3.0'
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    cloudvault:
+      enabled: false
+
+    featureFlags:
+      # Required to enable the auto-injected `Setup Signing` step on Linux jobs.
+      # Without this, onebranch.pipeline.signing@1 fails with:
+      #   "Setup Signing step did NOT complete successfully or missing"
+      # See https://aka.ms/OneBranch/Signing/SetupSigningMissing
+      linuxEsrpSigning: true
+
+    globalSdl:
+      tsa:
+        enabled: true
+      credscan:
+        enabled: true
+      binskim:
+        break: true
+      policheck:
+        break: true
+      cg:
+        failOnAlert: true
+
+    stages:
+      - stage: build
+        displayName: Build, test, pack, sign, publish
+        jobs:
+          - job: main
+            displayName: Build StateKeeper.slnx
+            pool:
+              type: linux
+            variables:
+              # Anything that must flow downstream lands here.
+              # OneBranch publishes this as the governed drop.
+              ob_outputDirectory: '$(Build.SourcesDirectory)/out'
+              ob_sdl_binskim_break: true
+              ob_sdl_binskim_scanOutputDirectoryOnly: true
+              ob_symbolsPublishing_enabled: true
+
+            steps:
+              # Build+test steps shared with the PR pipeline. The official build
+              # stamps the real package version.
+              - template: /.pipelines/shared.build.yml@self
+                parameters:
+                  version: '$(packageVersion)'
+
+              # Sign the shipping assembly BEFORE packing so the signed
+              # binary ends up inside the .nupkg.
+              - task: onebranch.pipeline.signing@1
+                displayName: Sign Microsoft.StateKeeper assembly
+                inputs:
+                  command: sign
+                  signing_profile: external_distribution
+                  files_to_sign: '**/Microsoft.StateKeeper.dll'
+                  search_root: '$(Build.SourcesDirectory)/src/Microsoft.StateKeeper/bin/Release'
+
+              - task: CmdLine@2
+                displayName: dotnet pack (Microsoft.StateKeeper)
+                inputs:
+                  script: >
+                    dotnet pack
+                    src/Microsoft.StateKeeper/Microsoft.StateKeeper.csproj
+                    --configuration Release
+                    --no-build
+                    --output $(ob_outputDirectory)/nupkgs
+                    -p:Version=$(packageVersion)
+
+              # Apply the NuGet package signature on top of the .nupkg / .snupkg.
+              - task: onebranch.pipeline.signing@1
+                displayName: Sign NuGet packages
+                inputs:
+                  command: sign
+                  signing_profile: external_distribution
+                  files_to_sign: '**/*.nupkg;**/*.snupkg'
+                  search_root: '$(ob_outputDirectory)/nupkgs'
+
+              # --skip-duplicate makes re-runs idempotent.
+              # `dotnet nuget push` automatically pushes any matching .snupkg
+              # alongside each .nupkg in the same directory.
+              - task: CmdLine@2
+                displayName: dotnet nuget push -> StateKeeper.Official
+                inputs:
+                  script: >
+                    dotnet nuget push "$(ob_outputDirectory)/nupkgs/*.nupkg"
+                    --source https://pkgs.dev.azure.com/msazure/One/_packaging/StateKeeper.Official/nuget/v3/index.json
+                    --api-key Az
+                    --skip-duplicate

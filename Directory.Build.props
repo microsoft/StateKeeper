@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
+    <!--
+      Local/dev fallback version. Uses a 0.0.x line so local builds are obviously
+      distinct from official CI builds, which override this
+    -->
+    <Version>0.0.0</Version>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

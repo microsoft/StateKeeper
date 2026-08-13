@@ -1,0 +1,54 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+# PR validation for the ADO mirror repo that we use for official builds.
+trigger: none
+
+parameters:
+  - name: debug
+    displayName: Enable verbose pipeline diagnostics
+    type: boolean
+    default: false
+
+variables:
+  - name: system.debug
+    value: ${{ parameters.debug }}
+
+  # dotnet/NuGet ergonomics
+  - name: DOTNET_NOLOGO
+    value: 'true'
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: 'true'
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    value: 'true'
+  - name: NUGET_XMLDOC_MODE
+    value: none
+
+  # OneBranch-sanctioned Linux build container.
+  - name: LinuxContainerImage
+    value: 'mcr.microsoft.com/onebranch/azurelinux/build:3.0'
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates
+  parameters:
+    stages:
+      - stage: build
+        displayName: Build and test
+        jobs:
+          - job: main
+            displayName: Build and test StateKeeper.slnx
+            pool:
+              type: linux
+            variables:
+              ob_outputDirectory: '$(Build.SourcesDirectory)/out'
+
+            steps:
+              # Build+test steps shared with the official build pipeline
+              - template: /.pipelines/shared.build.yml@self
+                parameters:
+                  version: '0.0.0' # placeholder; PR builds never pack or publish

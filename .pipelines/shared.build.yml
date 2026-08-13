@@ -1,0 +1,91 @@
+# Common build+test steps shared by OneBranch.PR.yml and OneBranch.Official.yml.
+# Referenced as a steps template; each pipeline keeps its own extends/stage/job
+# shell and appends any pipeline-specific steps (e.g. sign/pack/push) after this.
+
+parameters:
+  # Package version stamped into the build via -p:Version. The official build
+  # passes the real version; PR passes a throwaway placeholder since it never
+  # packs or publishes.
+  - name: version
+    type: string
+    default: '0.0.0'
+
+steps:
+
+  # The repo uses .slnx; full CLI support requires .NET 9 SDK 9.0.200+.
+  - task: UseDotNet@2
+    displayName: Install .NET 9 SDK
+    inputs:
+      packageType: sdk
+      version: '9.0.x'
+
+  # The .NET 9 SDK ships only the .NET 9 runtime, but our test
+  # projects target net8.0, so `dotnet test` needs the .NET 8
+  # runtime installed alongside it.
+  - task: UseDotNet@2
+    displayName: Install .NET 8 runtime (for net8.0 tests)
+    inputs:
+      packageType: runtime
+      version: '8.0.x'
+
+  # The public GitHub repo intentionally ships no nuget.config so external
+  # contributors and github PR builds restore from nuget.org. This ADO mirror must
+  # instead pull exclusively from approved Microsoft-internal feeds, so we
+  # generate a locked-down nuget.config at runtime.
+  - task: Bash@3
+    displayName: Generate internal-feed nuget.config
+    inputs:
+      targetType: inline
+      script: |
+        cat > "$(Build.SourcesDirectory)/nuget.config" <<'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="OneBranch-Consumption-Extended" value="https://pkgs.dev.azure.com/msazure/One/_packaging/OneBranch-Consumption-Extended/nuget/v3/index.json" />
+          </packageSources>
+          <packageSourceMapping>
+            <packageSource key="OneBranch-Consumption-Extended">
+              <package pattern="*" />
+            </packageSource>
+          </packageSourceMapping>
+        </configuration>
+        EOF
+
+  - task: NuGetAuthenticate@1
+    displayName: Authenticate to internal NuGet feeds
+
+  - task: CmdLine@2
+    displayName: dotnet restore
+    inputs:
+      script: dotnet restore StateKeeper.slnx
+
+  - task: CmdLine@2
+    displayName: dotnet build (Release)
+    inputs:
+      script: >
+        dotnet build StateKeeper.slnx
+        --configuration Release
+        --no-restore
+        -p:ContinuousIntegrationBuild=true
+        -p:Version=${{ parameters.version }}
+
+  - task: CmdLine@2
+    displayName: dotnet test (Release)
+    inputs:
+      script: >
+        dotnet test StateKeeper.slnx
+        --configuration Release
+        --no-build
+        --logger "trx"
+        --results-directory $(Agent.TempDirectory)/TestResults
+
+  - task: PublishTestResults@2
+    displayName: Publish test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '**/*.trx'
+      searchFolder: '$(Agent.TempDirectory)/TestResults'
+      mergeTestResults: true
+      failTaskOnFailedTests: true

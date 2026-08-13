@@ -1,0 +1,6 @@
+# Bump this to start a new major/minor line. The official build pipeline derives
+# the patch from an Azure DevOps counter keyed on this value, so the patch
+# automatically resets to 0 whenever major.minor changes.
+variables:
+  - name: majorMinor
+    value: '0.1'
