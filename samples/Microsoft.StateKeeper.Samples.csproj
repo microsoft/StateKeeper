@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.StateKeeper.Samples</RootNamespace>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

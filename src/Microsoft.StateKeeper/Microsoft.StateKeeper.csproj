@@ -4,4 +4,50 @@
     <RootNamespace>Microsoft.StateKeeper</RootNamespace>
   </PropertyGroup>
 
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>Microsoft.StateKeeper</PackageId>
+    <Title>Microsoft.StateKeeper</Title>
+    <Description>Async synchronization tools for safely managing concurrent access to shared state.</Description>
+    <Authors>Microsoft</Authors>
+    <Company>Microsoft Corporation</Company>
+    <Copyright>© Microsoft Corporation</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/microsoft/StateKeeper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/microsoft/StateKeeper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>async lock concurrency synchronization threading</PackageTags>
+  </PropertyGroup>
+
+  <!-- Symbol packages (.snupkg) so consumers can debug into this library -->
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!--
+    Embed sources directly in the PDB so consumers can step in when debugging.
+    We don't use source link since the official build is generated from a private
+    ADO mirror whose commit hashes don't necessarily correspond to the ones in the
+    public GitHub. Disabling SCM queries also keeps the mirror's remote URL and
+    commit hash out of the PDB and the .nuspec.
+  -->
+  <PropertyGroup>
+    <EmbedAllSources>true</EmbedAllSources>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <!-- Build deterministic binaries when running on CI -->
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SCM queries normally supply this; without it embedded source paths would
+         be the agent's absolute build paths instead of deterministic /_/ ones. -->
+    <SourceRoot Include="$(MSBuildThisFileDirectory)..\..\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
 </Project>

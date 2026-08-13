@@ -1,0 +1,9 @@
+{
+  "instanceUrl": "https://msazure.visualstudio.com",
+  "projectName": "One",
+  "areaPath": "One\\Networking\\Azure Traffic Manager",
+  "notificationAliases": [
+    "aztmcore@microsoft.com"
+  ],
+  "template": "TFSMSAzure"
+}
