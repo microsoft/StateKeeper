@@ -3,6 +3,9 @@
 
 namespace Microsoft.StateKeeper;
 
+/// <summary>
+/// specifies the order in which waiting tasks acquire a lock.
+/// </summary>
 public enum AcquisitionOrder
 {
     /// <summary>

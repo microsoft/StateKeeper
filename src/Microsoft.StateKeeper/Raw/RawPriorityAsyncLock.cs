@@ -28,6 +28,9 @@ public sealed class RawPriorityAsyncLock<TWaiterPriority> : IDisposable
         this.waiters = new PriorityQueue<TaskCompletionSource<IDisposable>, TWaiterPriority>(priorityComparer);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RawPriorityAsyncLock{TWaiterPriority}"/> class using the default priority comparer.
+    /// </summary>
     public RawPriorityAsyncLock() : this(Comparer<TWaiterPriority>.Default)
     {
     }
@@ -179,6 +182,7 @@ public sealed class RawPriorityAsyncLock<TWaiterPriority> : IDisposable
         /// Leak detection finalizer - only runs if neither Dispose() nor Defuse() was called.
         /// This means the releaser handle was returned to user code but was never released.
         /// DEBUG-only: Throwing from a finalizer will crash the process.
+        /// </summary>
         ~Releaser()
         {
             throw new LeakDetectedException(this.GetType().FullName!, this.acquisitionStackTrace);

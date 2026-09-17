@@ -62,7 +62,7 @@ public sealed class RawRWAsyncLock : IDisposable
             }
             else
             {
-                /// RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
+                // RunContinuationsAsynchronously: prevents awaiter continuations from running synchronously
                 // inside TrySetResult while we hold the internal lock, which would risk reentrancy bugs and deadlocks.
                 TaskCompletionSource<IDisposable> taskCompletionSource = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                 cancellationToken.Register(() =>
@@ -218,6 +218,9 @@ public sealed class RawRWAsyncLock : IDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes the lock and faults all waiting acquisitions.
+    /// </summary>
     public void Dispose()
     {
         lock (this.syncObject)

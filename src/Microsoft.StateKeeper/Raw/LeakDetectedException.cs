@@ -8,14 +8,26 @@ namespace Microsoft.StateKeeper.Raw;
 /// </summary>
 public class LeakDetectedException : InvalidOperationException
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LeakDetectedException"/> class.
+    /// </summary>
     public LeakDetectedException() : base("A lock releaser was garbage collected without being disposed.")
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LeakDetectedException"/> class with a specified error message.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
     public LeakDetectedException(string message) : base(message)
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LeakDetectedException"/> class with a specified error message and inner exception.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="innerException">The exception that caused the current exception.</param>
     public LeakDetectedException(string message, Exception innerException) : base(message, innerException)
     {
     }
