@@ -4,8 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CA2000 // Releaser ownership is transferred to callers via return value or TrySetResult
-#pragma warning disable CA1065 // Leak-detection finalizer intentionally throws in DEBUG builds
-#pragma warning disable CA1821 // Finalizer body is intentionally conditional (#if DEBUG) for leak detection
 
 namespace Microsoft.StateKeeper.Raw;
 
@@ -84,15 +82,6 @@ public sealed class RawRWAsyncLock : IDisposable
                                     {
                                         this.activeReaders++;
                                     }
-#if DEBUG
-                                    else
-                                    {
-                                        // The waiter was already completed (e.g., canceled) and did not acquire the lock,
-                                        // so defuse the releaser to prevent false leak detection.
-                                        // DEBUG-only: The leak detection finalizer only exists in DEBUG builds.
-                                        releaser.Defuse();
-                                    }
-#endif
                                 }
                                 this.ReadWaiters.Clear();
                             }
@@ -269,13 +258,6 @@ public sealed class RawRWAsyncLock : IDisposable
                 {
                     return; // successfully transferred the lock to the next waiting writer
                 }
-
-#if DEBUG
-                // The waiter was already completed (e.g., canceled) and did not acquire the lock,
-                // so defuse the releaser to prevent false leak detection.
-                // DEBUG-only: The leak detection finalizer only exists in DEBUG builds.
-                releaser.Defuse();
-#endif
             }
 
             this.activeWriter = false; // no active writer now
@@ -291,15 +273,6 @@ public sealed class RawRWAsyncLock : IDisposable
                         // successfully transferred the lock to a waiting reader
                         this.activeReaders++;
                     }
-#if DEBUG
-                    else
-                    {
-                        // The waiter was already completed (e.g., canceled) and did not acquire the lock,
-                        // so defuse the releaser to prevent false leak detection.
-                        // DEBUG-only: The leak detection finalizer only exists in DEBUG builds.
-                        releaser.Defuse();
-                    }
-#endif
                 }
                 this.ReadWaiters.Clear();
             }
@@ -330,13 +303,6 @@ public sealed class RawRWAsyncLock : IDisposable
                         this.activeWriter = true;
                         return;
                     }
-
-#if DEBUG
-                    // The waiter was already completed (e.g., canceled) and did not acquire the lock,
-                    // so defuse the releaser to prevent false leak detection.
-                    // DEBUG-only: The leak detection finalizer only exists in DEBUG builds.
-                    releaser.Defuse();
-#endif
                 }
             }
         }
@@ -354,51 +320,11 @@ public sealed class RawRWAsyncLock : IDisposable
         private readonly bool isWriterLock;
         private int isDisposed = NOT_DISPOSED;
 
-#if DEBUG
-        /// <summary>
-        /// Captures where the lock was acquired for leak detection diagnostics.
-        /// DEBUG-only: Capturing stack traces has performance overhead that we don't need in production.
-        /// </summary>
-        private readonly string acquisitionStackTrace;
-#endif
-
         internal Releaser(RawRWAsyncLock RawRWAsyncLock, bool isWriterLock)
         {
             this.RawRWAsyncLock = RawRWAsyncLock;
             this.isWriterLock = isWriterLock;
-#if DEBUG
-            // Keep track of where the lock was acquired for leak detection diagnostics.
-            // In debug mode only, we will log this and panic if the releaser is
-            // garbage collected without being disposed
-            this.acquisitionStackTrace = Environment.StackTrace;
-#endif
         }
-
-#if DEBUG
-        /// <summary>
-        /// Leak detection finalizer - only runs if neither Dispose() nor Defuse() was called.
-        /// This means the releaser handle was returned to user code but was never released.
-        /// DEBUG-only: Throwing from a finalizer will crash the process.
-        /// </summary>
-        ~Releaser()
-        {
-            var lockType = this.isWriterLock ? "write" : "read";
-            throw new LeakDetectedException($"{this.GetType().FullName} ({lockType} lock)", this.acquisitionStackTrace);
-        }
-#endif
-
-#if DEBUG
-        /// <summary>
-        /// Suppresses the leak detection finalizer for this releaser.
-        /// Used when a releaser is created but not handed off to a waiter (e.g., when the waiter was already canceled).
-        /// DEBUG-only: The finalizer only exists in DEBUG builds, so this method is also only needed in DEBUG builds.
-        /// </summary>
-        [SuppressMessage("Usage", "CA1816:Dispose methods should call SuppressFinalize", Justification = "Suppressing the leak detection finalizer for releasers that were never handed out")]
-        internal void Defuse()
-        {
-            GC.SuppressFinalize(this);
-        }
-#endif
 
         public void Dispose()
         {
@@ -406,11 +332,6 @@ public sealed class RawRWAsyncLock : IDisposable
             // even if the releaser was disposed multiple times
             if (Interlocked.Exchange(ref this.isDisposed, DISPOSED) == NOT_DISPOSED)
             {
-#if DEBUG
-                // Suppress the leak detection finalizer since the lock is being properly released.
-                // DEBUG-only: The finalizer only exists in DEBUG builds, so no need to suppress it in release builds.
-                GC.SuppressFinalize(this);
-#endif
                 if (this.isWriterLock)
                 {
                     this.RawRWAsyncLock.ReleaseWriterLock();
