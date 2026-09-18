@@ -10,18 +10,6 @@ public class RWAsyncLockTests
 {
     public required TestContext TestContext { get; set; }
 
-#if DEBUG
-    [TestCleanup]
-    public void Cleanup()
-    {
-        // Force finalizers to run, which will trigger leak detection immediately
-        // rather than relying on GC timing
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-#endif
-
     private sealed class TestState
     {
         public int Value { get; set; }
@@ -273,7 +261,7 @@ public class RWAsyncLockTests
             new TestState { Value = 0 },
             state => state.Value);
 
-        StateHandle<TestState> handle1 = await sut.AcquireWriterAsync(this.TestContext.CancellationToken);
+        _ = await sut.AcquireWriterAsync(this.TestContext.CancellationToken);
 
         bool writerTaskStarted = false;
         bool readerTaskStarted = false;
@@ -303,10 +291,6 @@ public class RWAsyncLockTests
 
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => waitingWriter);
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => waitingReader);
-
-        // Dispose handle1 after the test assertion - the RWAsyncLock is already disposed,
-        // so this just cleans up to avoid leak detection triggering
-        handle1.Dispose();
     }
 
     [TestMethod]

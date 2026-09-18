@@ -392,7 +392,7 @@ public class RawRWAsyncLockOrleansTests
         {
             var sut = new RawRWAsyncLock();
 
-            var writer = await sut.AcquireWriteLockAsync(CancellationToken.None);
+            _ = await sut.AcquireWriteLockAsync(CancellationToken.None);
             await checkOrleans();
 
             // Enqueue both a write waiter and a read waiter
@@ -414,8 +414,6 @@ public class RawRWAsyncLockOrleansTests
             await Assert.ThrowsExactlyAsync<ObjectDisposedException>(
                 async () => await sut.AcquireReadLockAsync(CancellationToken.None));
             await checkOrleans();
-
-            writer.Dispose();
         });
     }
 
