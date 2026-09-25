@@ -9,12 +9,12 @@ using Microsoft.StateKeeper.Raw;
 namespace Microsoft.StateKeeper;
 
 /// <summary>
-/// Manages exclusive access to a state object. Waiting callers acquire access in priority order.
+/// Manages exclusive access to a state object.
 /// </summary>
 /// <remarks><para>Waiters acquire access in ascending priority order.</para>
 /// <para>Releasing the acquired handle allows other callers to acquire access.</para></remarks>
 /// <typeparam name="TState">The type of the state object.</typeparam>
-/// <typeparam name="TWaiterPriority">Type of argument to determine priority of callers.</typeparam>
+/// <typeparam name="TWaiterPriority">Type of argument to determine priority of waiters.</typeparam>
 public sealed class PriorityAsyncLock<TState, TWaiterPriority> : IDisposable where TState : class
 {
     private readonly TState state;
@@ -24,7 +24,7 @@ public sealed class PriorityAsyncLock<TState, TWaiterPriority> : IDisposable whe
     /// Initializes a new PriorityAsyncLock.
     /// </summary>
     /// <param name="state">The state object to manage access to.</param>
-    /// <param name="priorityComparer">Comparer used to determine the order in which waiting callers acquire access.</param>
+    /// <param name="priorityComparer">Comparer used to determine the order in which waiters acquire access.</param>
     public PriorityAsyncLock(TState state, IComparer<TWaiterPriority> priorityComparer)
     {
         this.state = state;
@@ -46,7 +46,7 @@ public sealed class PriorityAsyncLock<TState, TWaiterPriority> : IDisposable whe
     /// <remarks>
     /// Access can only be acquired once at a time, so attempting to acquire while already holding access will result in a deadlock.
     /// </remarks>
-    /// <param name="waiterPriority">Information about the caller, used to calculate priority when multiple callers are waiting.</param>
+    /// <param name="waiterPriority">Information about the caller, used to calculate priority when there are multiple waiters.</param>
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining access.</param>
     /// <returns>A handle which provides access to the state and relinquishes access when disposed.</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the PriorityAsyncLock has been disposed before access is obtained.</exception>
@@ -87,7 +87,7 @@ public sealed class PriorityAsyncLock<TState, TWaiterPriority> : IDisposable whe
     }
 
     /// <summary>
-    /// Prevents new callers from acquiring access and stops all waiting callers.
+    /// Prevents new callers from acquiring access and stops all waiters.
     /// </summary>
     public void Dispose()
     {

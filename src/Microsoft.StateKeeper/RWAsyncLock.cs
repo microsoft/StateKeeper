@@ -49,7 +49,7 @@ public sealed class RWAsyncLock<TMutableState, TReadOnlyState> : IDisposable whe
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining access.</param>
     /// <returns>A handle which provides access to the mutable state and relinquishes access when disposed.</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the RWAsyncLock has been disposed before access is obtained.</exception>
-    /// <exception cref="TaskCanceledException">Thrown if the provided cancellation token is canceled before access is obtained.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the provided cancellation token is canceled before access is obtained.</exception>
     public ValueTask<StateHandle<TMutableState>> AcquireWriterAsync(CancellationToken cancellationToken)
     {
         var task = this.asyncReadersWriterLock.AcquireWriteLockAsync(cancellationToken);
@@ -77,7 +77,7 @@ public sealed class RWAsyncLock<TMutableState, TReadOnlyState> : IDisposable whe
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining access.</param>
     /// <returns>A handle which provides access to the read-only state and relinquishes access when disposed.</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the RWAsyncLock has been disposed before access is obtained.</exception>
-    /// <exception cref="TaskCanceledException">Thrown if the provided cancellation token is canceled before access is obtained.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the provided cancellation token is canceled before access is obtained.</exception>
     public ValueTask<StateHandle<TReadOnlyState>> AcquireReaderAsync(CancellationToken cancellationToken)
     {
         var task = this.asyncReadersWriterLock.AcquireReadLockAsync(cancellationToken);
@@ -155,7 +155,7 @@ public sealed class RWAsyncLock<TMutableState, TReadOnlyState> : IDisposable whe
     }
 
     /// <summary>
-    /// Prevents new callers from acquiring access and stops all waiting callers.
+    /// Prevents new callers from acquiring access and stops all waiters.
     /// </summary>
     public void Dispose()
     {

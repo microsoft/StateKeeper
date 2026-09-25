@@ -7,7 +7,7 @@ namespace Microsoft.StateKeeper.Samples;
 
 /// <summary>
 /// Demonstrates RawPriorityAsyncLock: a mutual-exclusion lock without managed state
-/// where waiting tasks acquire in ascending priority order.
+/// where waiters acquire in ascending priority order.
 /// You manage the protected resource yourself.
 /// </summary>
 internal static class RawPriorityAsyncLockSample

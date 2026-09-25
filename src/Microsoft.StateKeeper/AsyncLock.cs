@@ -11,7 +11,7 @@ namespace Microsoft.StateKeeper;
 
 /// <summary>
 /// Manages exclusive access to a state object.
-/// Waiting callers acquire access in First-In-First-Out or Last-In-First-Out order.
+/// Waiters acquire access in First-In-First-Out or Last-In-First-Out order.
 /// </summary>
 /// <remarks>Releasing the acquired handle allows other callers to acquire access.</remarks>
 /// <typeparam name="TState">The type of the state object.</typeparam>
@@ -24,7 +24,7 @@ public sealed class AsyncLock<TState> : IDisposable where TState : class
     /// Initializes a new AsyncLock.
     /// </summary>
     /// <param name="state">The state object to manage access to.</param>
-    /// <param name="acquisitionOrder">Selects whether waiting callers obtain access in First-In-First-Out or Last-In-First-Out order.</param>
+    /// <param name="acquisitionOrder">Selects whether waiters obtain access in First-In-First-Out or Last-In-First-Out order.</param>
     public AsyncLock(TState state, AcquisitionOrder acquisitionOrder = AcquisitionOrder.FIFO)
     {
         this.state = state;
@@ -40,6 +40,7 @@ public sealed class AsyncLock<TState> : IDisposable where TState : class
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining access.</param>
     /// <returns>A handle which provides access to the state and relinquishes access when disposed.</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the AsyncLock has been disposed before access is obtained.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the provided cancellation token is canceled before access is obtained.</exception>
     public ValueTask<StateHandle<TState>> AcquireAsync(CancellationToken cancellationToken)
     {
         var task = this.asyncLock.AcquireAsync(cancellationToken);
@@ -77,7 +78,7 @@ public sealed class AsyncLock<TState> : IDisposable where TState : class
     }
 
     /// <summary>
-    /// Prevents new callers from acquiring access and stops all waiting callers.
+    /// Prevents new callers from acquiring access and stops all waiters.
     /// </summary>
     public void Dispose()
     {

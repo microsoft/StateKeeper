@@ -34,7 +34,7 @@ public sealed class RawRWAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
+    /// Obtains the write lock, asynchronously waiting for it if it is not immediately available.
     /// </summary>
     /// <remarks>
     /// The write lock can only be acquired once at a time, so attempting to acquire while already holding the lock will result in a deadlock.
@@ -42,7 +42,7 @@ public sealed class RawRWAsyncLock : IDisposable
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
     /// <returns>A releaser which releases the lock when disposed</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the RawRWAsyncLock has been disposed before the lock is obtained</exception>
-    /// <exception cref="TaskCanceledException">Thrown if the provided cancellation token is canceled before the lock is obtained</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the provided cancellation token is canceled before the lock is obtained</exception>
     public ValueTask<IDisposable> AcquireWriteLockAsync(CancellationToken cancellationToken)
     {
         lock (this.syncObject)
@@ -104,7 +104,7 @@ public sealed class RawRWAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
+    /// Obtains a read lock, asynchronously waiting for it if it is not immediately available.
     /// </summary>
     /// <remarks>
     /// Although multiple readers may hold the read lock concurrently, attempting to acquire the read lock while already holding it will result in a deadlock
@@ -113,7 +113,7 @@ public sealed class RawRWAsyncLock : IDisposable
     /// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
     /// <returns>A releaser which releases the lock when disposed</returns>
     /// <exception cref="ObjectDisposedException">Thrown if the RawRWAsyncLock has been disposed before the lock is obtained</exception>
-    /// <exception cref="TaskCanceledException">Thrown if the provided cancellation token is canceled before the lock is obtained</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the provided cancellation token is canceled before the lock is obtained</exception>
     public ValueTask<IDisposable> AcquireReadLockAsync(CancellationToken cancellationToken)
     {
         lock (this.syncObject)
@@ -153,10 +153,10 @@ public sealed class RawRWAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Attempt to immediately acquire the write lock without waiting.
+    /// Attempts to immediately acquire the write lock without waiting.
     /// </summary>
-    /// <param name="releaser">releaser which releases the lock when disposed, or null if lock is not acquired</param>
-    /// <returns>true if lock is acquired, false otherwise</returns>
+    /// <param name="releaser">releaser which releases the lock when disposed, or null if the lock is not acquired</param>
+    /// <returns>true if the lock is acquired, false otherwise</returns>
     public bool TryAcquireWriteLock([NotNullWhen(true)] out IDisposable? releaser)
     {
         lock (this.syncObject)
@@ -177,10 +177,10 @@ public sealed class RawRWAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Attempt to immediately acquire the read lock without waiting.
+    /// Attempts to immediately acquire a read lock without waiting.
     /// </summary>
-    /// <param name="releaser">releaser which releases the lock when disposed, or null if lock is not acquired</param>
-    /// <returns>true if lock is acquired, false otherwise</returns>
+    /// <param name="releaser">releaser which releases the lock when disposed, or null if the lock is not acquired</param>
+    /// <returns>true if the lock is acquired, false otherwise</returns>
     public bool TryAcquireReadLock([NotNullWhen(true)] out IDisposable? releaser)
     {
         lock (this.syncObject)
@@ -208,7 +208,7 @@ public sealed class RawRWAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Disposes the lock and faults all waiting acquisitions.
+    /// prevents new tasks from acquiring locks and stops all waiters
     /// </summary>
     public void Dispose()
     {
