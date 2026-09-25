@@ -44,7 +44,7 @@
   <ItemGroup>
     <!-- SCM queries normally supply this; without it embedded source paths would
          be the agent's absolute build paths instead of deterministic /_/ ones. -->
-    <SourceRoot Include="$(MSBuildThisFileDirectory)..\..\" />
+    <SourceRoot Include="$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..'))" />
   </ItemGroup>
 
   <ItemGroup>
