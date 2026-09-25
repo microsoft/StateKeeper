@@ -14,6 +14,8 @@ This project is currently experimental. A Nuget package is coming soon.
 
 AsyncLock allows exclusive access to the protected state in either first-in-first-out or last-in-first-out order.
 
+Neglecting to dispose a handle means the lock will not be able to be acquired again, so this should always be avoided through a `using` statement or `finally` block.
+
 ```cs
 // initialize with the mutable state to protect
 using AsyncLock<List<string>> asyncLock = new(
@@ -106,9 +108,6 @@ using (var releaser = await rawLock.AcquireAsync(cancellationToken))
 }
 ```
 
-### Automated Leak Detection
-
-Neglecting to dispose a handle means the lock will not be able to be acquired again, so this should always be avoided through a `using` statement or `finally` block. **In debug mode only**, StateKeeper has automated leak detection which will terminate the process if a handle is garbage-collected before being disposed.
 
 ## Building
 

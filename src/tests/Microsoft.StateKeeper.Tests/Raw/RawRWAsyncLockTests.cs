@@ -11,18 +11,6 @@ public class RawRWAsyncLockTests
 {
     public required TestContext TestContext { get; set; }
 
-#if DEBUG
-    [TestCleanup]
-    public void Cleanup()
-    {
-        // Force finalizers to run, which will trigger leak detection immediately
-        // rather than relying on GC timing
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-#endif
-
     [TestMethod]
     public async Task PreventsSimultaneousWrites()
     {
@@ -207,7 +195,7 @@ public class RawRWAsyncLockTests
     public async Task StopsWaitingTasksWhenDisposed()
     {
         using RawRWAsyncLock sut = new RawRWAsyncLock();
-        var releaser1 = await sut.AcquireWriteLockAsync(this.TestContext.CancellationToken);
+        _ = await sut.AcquireWriteLockAsync(this.TestContext.CancellationToken);
 
         bool task2Started = false;
         bool task3Started = false;
@@ -237,10 +225,6 @@ public class RawRWAsyncLockTests
 
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => user2);
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => user3);
-
-        // Dispose releaser1 after the test assertion - the lock is already disposed,
-        // so this just cleans up to avoid leak detection triggering
-        releaser1.Dispose();
     }
 
     [TestMethod]
@@ -592,8 +576,7 @@ public class RawRWAsyncLockTests
             firstReleaser.Dispose();
         }
 
-        // If the writer acquired the lock during release (before cancellation took effect),
-        // dispose it to avoid leak detection.
+        // If the writer acquired the lock during release (before cancellation took effect), dispose it.
         if (waitingWriterTask.IsCompleted && !waitingWriterTask.IsCanceled && !waitingWriterTask.IsFaulted)
         {
             waitingWriterTask.Result.Dispose();
@@ -636,7 +619,7 @@ public class RawRWAsyncLockTests
         }
         finally
         {
-            // Always clean up to prevent leak detection finalizer from crashing the process
+            // Always release the original read lock.
             firstReleaser.Dispose();
         }
     }

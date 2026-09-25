@@ -11,18 +11,6 @@ public class RawAsyncLockTests
 {
     public required TestContext TestContext { get; set; }
 
-#if DEBUG
-    [TestCleanup]
-    public void Cleanup()
-    {
-        // Force finalizers to run, which will trigger leak detection immediately
-        // rather than relying on GC timing
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-#endif
-
     [TestMethod]
     public async Task PreventsSimultaneousAccess()
     {
@@ -171,7 +159,7 @@ public class RawAsyncLockTests
     {
         using RawAsyncLock sut = new RawAsyncLock(acquisitionOrder: AcquisitionOrder.LIFO);
 
-        IDisposable releaser1 = await sut.AcquireAsync(this.TestContext.CancellationToken);
+        _ = await sut.AcquireAsync(this.TestContext.CancellationToken);
 
         bool secondTaskStarted = false;
 
@@ -192,10 +180,6 @@ public class RawAsyncLockTests
         sut.Dispose();
 
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => user2);
-
-        // Dispose releaser1 after the test assertion - the lock is already disposed,
-        // so this just cleans up to avoid leak detection triggering
-        releaser1.Dispose();
     }
 
     [TestMethod]

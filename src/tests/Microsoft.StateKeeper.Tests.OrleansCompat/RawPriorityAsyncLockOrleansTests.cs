@@ -122,7 +122,7 @@ public class RawPriorityAsyncLockOrleansTests
         {
             var sut = new RawPriorityAsyncLock<int>();
 
-            var releaser = await sut.AcquireAsync(0, CancellationToken.None);
+            _ = await sut.AcquireAsync(0, CancellationToken.None);
             await checkOrleans();
 
             // Start a waiter
@@ -139,9 +139,6 @@ public class RawPriorityAsyncLockOrleansTests
             await Assert.ThrowsExactlyAsync<ObjectDisposedException>(
                 async () => await sut.AcquireAsync(0, CancellationToken.None));
             await checkOrleans();
-
-            // Clean up the held releaser
-            releaser.Dispose();
         });
     }
 

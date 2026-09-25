@@ -10,18 +10,6 @@ public class PriorityAsyncLockTests
 {
     public required TestContext TestContext { get; set; }
 
-#if DEBUG
-    [TestCleanup]
-    public void Cleanup()
-    {
-        // Force finalizers to run, which will trigger leak detection immediately
-        // rather than relying on GC timing
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-#endif
-
     private sealed class TestState
     {
         public int Value { get; set; }
@@ -198,7 +186,7 @@ public class PriorityAsyncLockTests
     {
         using var sut = new PriorityAsyncLock<TestState, int>(new TestState { Value = 0 });
 
-        StateHandle<TestState> handle1 = await sut.AcquireAsync(1, this.TestContext.CancellationToken);
+        _ = await sut.AcquireAsync(1, this.TestContext.CancellationToken);
 
         bool secondTaskStarted = false;
 
@@ -219,10 +207,6 @@ public class PriorityAsyncLockTests
         sut.Dispose();
 
         await Assert.ThrowsExactlyAsync<ObjectDisposedException>(() => user2);
-
-        // Dispose handle1 after the test assertion - the PriorityAsyncLock is already disposed,
-        // so this just cleans up to avoid leak detection triggering
-        handle1.Dispose();
     }
 
     [TestMethod]

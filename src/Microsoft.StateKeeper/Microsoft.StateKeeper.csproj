@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.StateKeeper</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <!-- NuGet package metadata -->
