@@ -1,13 +1,25 @@
 name: $(Date:yyyyMMdd)$(Rev:.r)
 # To get Microsoft-internal compliant code signing, the official build pipeline runs in an Azure DevOps repo that mirrors the public GitHub.
 
-# Manual-trigger only.
 trigger: none
 pr: none
+
+schedules:
+  - cron: '0 8 * * Wed'
+    displayName: Weekly CodeQL refresh
+    branches:
+      include:
+        - main
+    always: true
 
 parameters:
   - name: debug
     displayName: Enable verbose pipeline diagnostics
+    type: boolean
+    default: false
+
+  - name: publishPrivateNuGetPackages
+    displayName: Publish NuGet packages to the private feed
     type: boolean
     default: false
 
@@ -22,14 +34,18 @@ variables:
   - name: system.debug
     value: ${{ parameters.debug }}
 
-  # Package version. The patch auto-increments via an Azure DevOps counter keyed
-  # on major.minor (from version.yml), so bumping major.minor resets the patch to
-  # 0. Passed to MSBuild as -p:Version below. Requires no git history, so the
-  # pipeline can use OneBranch's default checkout (see the build job).
-  - name: patch
-    value: $[counter(variables['majorMinor'], 0)]
-  - name: packageVersion
-    value: $(majorMinor).$(patch)
+  # Auto-incrementing package patch version.
+  # Auto-increments via an Azure DevOps counter keyed on major.minor (from version.yml), so bumping
+  # major.minor resets the patch to 0 and the counter doesn't increment for scheduled CodeQL scans
+  # that don't consume the counter.
+  - ${{ if eq(parameters.publishPrivateNuGetPackages, true) }}:
+    - name: patch
+      value: $[counter(variables['majorMinor'], 0)]
+    - name: packageVersion
+      value: $(majorMinor).$(patch)
+  - ${{ else }}:
+    - name: packageVersion
+      value: '0.0.0'
 
   # dotnet/NuGet ergonomics
   - name: DOTNET_NOLOGO
@@ -79,7 +95,7 @@ extends:
 
     stages:
       - stage: build
-        displayName: Build, test, pack, sign, publish
+        displayName: Build, test, and optionally publish
         jobs:
           - job: main
             displayName: Build StateKeeper.slnx
@@ -100,42 +116,45 @@ extends:
                 parameters:
                   version: '$(packageVersion)'
 
-              # Sign the shipping assembly BEFORE packing so the signed
-              # binary ends up inside the .nupkg.
-              - task: onebranch.pipeline.signing@1
-                displayName: Sign Microsoft.StateKeeper assembly
-                inputs:
-                  command: sign
-                  signing_profile: external_distribution
-                  files_to_sign: '**/Microsoft.StateKeeper.dll'
-                  search_root: '$(Build.SourcesDirectory)/src/Microsoft.StateKeeper/bin/Release'
+              - ${{ if eq(parameters.publishPrivateNuGetPackages, true) }}:
+                # Sign the shipping assembly BEFORE packing so the signed
+                # binary ends up inside the .nupkg.
+                - task: onebranch.pipeline.signing@1
+                  displayName: Sign Microsoft.StateKeeper assembly
+                  inputs:
+                    command: sign
+                    signing_profile: external_distribution
+                    files_to_sign: '**/Microsoft.StateKeeper.dll'
+                    search_root: '$(Build.SourcesDirectory)/src/Microsoft.StateKeeper/bin/Release'
 
-              - task: CmdLine@2
-                displayName: dotnet pack (Microsoft.StateKeeper)
-                inputs:
-                  script: >
-                    dotnet pack
-                    src/Microsoft.StateKeeper/Microsoft.StateKeeper.csproj
-                    --configuration Release
-                    --no-build
-                    --output $(ob_outputDirectory)/nupkgs
-                    -p:Version=$(packageVersion)
+                - task: CmdLine@2
+                  displayName: dotnet pack (Microsoft.StateKeeper)
+                  inputs:
+                    script: >
+                      dotnet pack
+                      src/Microsoft.StateKeeper/Microsoft.StateKeeper.csproj
+                      --configuration Release
+                      --no-build
+                      --output $(ob_outputDirectory)/nupkgs
+                      -p:Version=$(packageVersion)
 
-              # Apply the NuGet package signature on top of the .nupkg.
-              - task: onebranch.pipeline.signing@1
-                displayName: Sign NuGet packages
-                inputs:
-                  command: sign
-                  signing_profile: external_distribution
-                  files_to_sign: '**/*.nupkg'
-                  search_root: '$(ob_outputDirectory)/nupkgs'
+                # Apply the NuGet package signature on top of the .nupkg.
+                - task: onebranch.pipeline.signing@1
+                  displayName: Sign NuGet packages
+                  inputs:
+                    command: sign
+                    signing_profile: external_distribution
+                    files_to_sign: '**/*.nupkg'
+                    search_root: '$(ob_outputDirectory)/nupkgs'
 
-              # --skip-duplicate makes re-runs idempotent.
-              - task: CmdLine@2
-                displayName: dotnet nuget push -> StateKeeper.Official
-                inputs:
-                  script: >
-                    dotnet nuget push "$(ob_outputDirectory)/nupkgs/*.nupkg"
-                    --source https://pkgs.dev.azure.com/msazure/One/_packaging/StateKeeper.Official/nuget/v3/index.json
-                    --api-key Az
-                    --skip-duplicate
+                # --skip-duplicate makes re-runs idempotent.
+                # defensively, we prevent publishing on the scheduled runs which are used only for CodeQL scans.
+                - task: CmdLine@2
+                  displayName: dotnet nuget push -> StateKeeper.Official
+                  condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
+                  inputs:
+                    script: >
+                      dotnet nuget push "$(ob_outputDirectory)/nupkgs/*.nupkg"
+                      --source https://pkgs.dev.azure.com/msazure/One/_packaging/StateKeeper.Official/nuget/v3/index.json
+                      --api-key Az
+                      --skip-duplicate
