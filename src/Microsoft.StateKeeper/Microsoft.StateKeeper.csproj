@@ -21,10 +21,12 @@
     <PackageTags>async lock concurrency synchronization threading</PackageTags>
   </PropertyGroup>
 
-  <!-- Symbol packages (.snupkg) so consumers can debug into this library -->
+  <!--
+    Embed the PDB in the DLL so consumers can debug into this library. We don't
+    ship a .snupkg because the Azure Artifacts feed we publish to doesn't accept them.
+  -->
   <PropertyGroup>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <!--

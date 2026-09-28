@@ -121,18 +121,16 @@ extends:
                     --output $(ob_outputDirectory)/nupkgs
                     -p:Version=$(packageVersion)
 
-              # Apply the NuGet package signature on top of the .nupkg / .snupkg.
+              # Apply the NuGet package signature on top of the .nupkg.
               - task: onebranch.pipeline.signing@1
                 displayName: Sign NuGet packages
                 inputs:
                   command: sign
                   signing_profile: external_distribution
-                  files_to_sign: '**/*.nupkg;**/*.snupkg'
+                  files_to_sign: '**/*.nupkg'
                   search_root: '$(ob_outputDirectory)/nupkgs'
 
               # --skip-duplicate makes re-runs idempotent.
-              # `dotnet nuget push` automatically pushes any matching .snupkg
-              # alongside each .nupkg in the same directory.
               - task: CmdLine@2
                 displayName: dotnet nuget push -> StateKeeper.Official
                 inputs:
