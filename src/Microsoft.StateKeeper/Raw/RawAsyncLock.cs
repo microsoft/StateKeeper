@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.StateKeeper.Raw;
 
 /// <summary>
-/// A mutual-exclusion lock that can be acquired asynchronously. Supports either FIFO or LIFO ordering for waiting tasks.
+/// A mutual-exclusion lock that can be acquired asynchronously. Supports either FIFO or LIFO ordering for waiters.
 /// </summary>
 public sealed class RawAsyncLock : IDisposable
 {
@@ -21,14 +21,14 @@ public sealed class RawAsyncLock : IDisposable
     /// <summary>
     /// Initializes a new RawAsyncLock
     /// </summary>
-    /// <param name="acquisitionOrder">Selects whether waiting tasks obtain the lock in First-In-First-Out or Last-In-First-Out order</param>
+    /// <param name="acquisitionOrder">Selects whether waiters obtain the lock in First-In-First-Out or Last-In-First-Out order</param>
     public RawAsyncLock(AcquisitionOrder acquisitionOrder = AcquisitionOrder.FIFO)
     {
         this.acquisitionOrder = acquisitionOrder;
     }
 
     /// <summary>
-    /// Obtains a lock, asynchronously awaiting for the lock if it is not immediately available.
+    /// Obtains the lock, asynchronously waiting for it if it is not immediately available.
     /// </summary>
     /// <remarks>
     /// The lock can only be acquired once at a time, so attempting to acquire while already holding the lock will result in a deadlock.
@@ -72,10 +72,10 @@ public sealed class RawAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// Attempt to immediately acquire the lock without waiting.
+    /// Attempts to immediately acquire the lock without waiting.
     /// </summary>
-    /// <param name="releaser">releaser which releases the lock when disposed, or null if lock is not acquired</param>
-    /// <returns>true if lock is acquired, false otherwise</returns>
+    /// <param name="releaser">releaser which releases the lock when disposed, or null if the lock is not acquired</param>
+    /// <returns>true if the lock is acquired, false otherwise</returns>
     public bool TryAcquire([NotNullWhen(true)] out IDisposable? releaser)
     {
         lock (this.waiters)
@@ -96,7 +96,7 @@ public sealed class RawAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// prevents new tasks from acquiring locks and stops all waiting tasks
+    /// prevents new tasks from acquiring locks and stops all waiters
     /// </summary>
     public void Dispose()
     {
@@ -112,7 +112,7 @@ public sealed class RawAsyncLock : IDisposable
     }
 
     /// <summary>
-    /// prevents new tasks from acquiring locks and stops all waiting tasks
+    /// transfers the lock to the next waiter that has not been canceled, or unlocks it if there is none
     /// </summary>
     private void Release()
     {
@@ -162,7 +162,7 @@ public sealed class RawAsyncLock : IDisposable
         private int isDisposed = NOT_DISPOSED;
 
         /// <summary>
-        /// Releases the lock
+        /// Initializes a new Releaser for the specified lock
         /// </summary>
         internal Releaser(RawAsyncLock RawAsyncLock)
         {
