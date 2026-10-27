@@ -12,7 +12,7 @@
     <Description>Async synchronization tools for safely managing concurrent access to shared state.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft Corporation</Company>
-    <Copyright>© Microsoft Corporation</Copyright>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/microsoft/StateKeeper</PackageProjectUrl>
