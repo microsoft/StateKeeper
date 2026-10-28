@@ -1,5 +1,7 @@
 # StateKeeper
 
+[![NuGet](https://img.shields.io/nuget/v/Microsoft.StateKeeper.svg)](https://www.nuget.org/packages/Microsoft.StateKeeper)
+
 Async locks for **safely** managing concurrent access to shared state in .NET.
 
 StateKeeper provides type-safe compile-time guarantees about how a mutable state can be used. With `AsyncLock`, the protected state is accessed through a handle which is received when the lock is acquired and disposed to release the lock. In `RWAsyncLock`, holding a writer lock allows access to the mutable state while holding a reader lock only provides an immutable copy of the state.
@@ -7,8 +9,11 @@ StateKeeper provides type-safe compile-time guarantees about how a mutable state
 
 # Installation
 
-This project is currently experimental. A Nuget package is coming soon.
+Install the [Microsoft.StateKeeper](https://www.nuget.org/packages/Microsoft.StateKeeper) package from NuGet:
 
+```sh
+dotnet add package Microsoft.StateKeeper
+```
 
 ## Usage
 
